@@ -16,6 +16,7 @@
         <activity android:name=".ui.ImageBaseActivity"/>
         <activity
             android:name=".ui.ImageGridActivity"
+            android:hardwareAccelerated="true"
             android:configChanges="orientation|screenSize"
             android:theme="@style/ImagePickerTheme"/>
         <activity
@@ -25,11 +26,13 @@
             android:theme="@style/ImagePickerTheme"/>
         <activity
             android:name=".ui.ImagePreviewActivity"
+            android:hardwareAccelerated="true"
             android:configChanges="orientation|screenSize"
             android:theme="@style/ImagePickerThemeFullScreen"/>
 
         <activity
             android:name=".ui.ImagePreviewDelActivity"
+            android:hardwareAccelerated="true"
             android:configChanges="orientation|screenSize"
             android:theme="@style/ImagePickerThemeFullScreen"/>
 
