@@ -106,13 +106,17 @@ public class WxDemoActivity extends AppCompatActivity implements ImagePickerAdap
                                 //打开选择,本次允许选择的数量
                                 ImagePicker.getInstance().setSelectLimit(maxImgCount - selImageList.size());
                                 Intent intent = new Intent(WxDemoActivity.this, ImageGridActivity.class);
-                                intent.putExtra(ImageGridActivity.EXTRAS_TAKE_PICKERS,true); // 是否是直接打开相机
+                                intent.putExtra(ImageGridActivity.EXTRAS_TAKE_PICKERS, true); // 是否是直接打开相机
                                 startActivityForResult(intent, REQUEST_CODE_SELECT);
                                 break;
                             case 1:
                                 //打开选择,本次允许选择的数量
                                 ImagePicker.getInstance().setSelectLimit(maxImgCount - selImageList.size());
                                 Intent intent1 = new Intent(WxDemoActivity.this, ImageGridActivity.class);
+                                /* 如果需要进入选择的时候显示已经选中的图片，
+                                 * 详情请查看ImagePickerActivity
+                                 * */
+//                                intent1.putExtra(ImageGridActivity.EXTRAS_IMAGES,images);
                                 startActivityForResult(intent1, REQUEST_CODE_SELECT);
                                 break;
                             default:
@@ -129,11 +133,13 @@ public class WxDemoActivity extends AppCompatActivity implements ImagePickerAdap
                 Intent intentPreview = new Intent(this, ImagePreviewDelActivity.class);
                 intentPreview.putExtra(ImagePicker.EXTRA_IMAGE_ITEMS, (ArrayList<ImageItem>) adapter.getImages());
                 intentPreview.putExtra(ImagePicker.EXTRA_SELECTED_IMAGE_POSITION, position);
-                intentPreview.putExtra(ImagePicker.EXTRA_FROM_ITEMS,true);
+                intentPreview.putExtra(ImagePicker.EXTRA_FROM_ITEMS, true);
                 startActivityForResult(intentPreview, REQUEST_CODE_PREVIEW);
                 break;
         }
     }
+
+    ArrayList<ImageItem> images = null;
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -141,8 +147,8 @@ public class WxDemoActivity extends AppCompatActivity implements ImagePickerAdap
         if (resultCode == ImagePicker.RESULT_CODE_ITEMS) {
             //添加图片返回
             if (data != null && requestCode == REQUEST_CODE_SELECT) {
-                ArrayList<ImageItem> images = (ArrayList<ImageItem>) data.getSerializableExtra(ImagePicker.EXTRA_RESULT_ITEMS);
-                if (images != null){
+                images = (ArrayList<ImageItem>) data.getSerializableExtra(ImagePicker.EXTRA_RESULT_ITEMS);
+                if (images != null) {
                     selImageList.addAll(images);
                     adapter.setImages(selImageList);
                 }
@@ -150,8 +156,8 @@ public class WxDemoActivity extends AppCompatActivity implements ImagePickerAdap
         } else if (resultCode == ImagePicker.RESULT_CODE_BACK) {
             //预览图片返回
             if (data != null && requestCode == REQUEST_CODE_PREVIEW) {
-                ArrayList<ImageItem> images = (ArrayList<ImageItem>) data.getSerializableExtra(ImagePicker.EXTRA_IMAGE_ITEMS);
-                if (images != null){
+                images = (ArrayList<ImageItem>) data.getSerializableExtra(ImagePicker.EXTRA_IMAGE_ITEMS);
+                if (images != null) {
                     selImageList.clear();
                     selImageList.addAll(images);
                     adapter.setImages(selImageList);

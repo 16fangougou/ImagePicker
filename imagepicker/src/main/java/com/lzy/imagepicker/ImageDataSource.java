@@ -83,6 +83,12 @@ public class ImageDataSource implements LoaderManager.LoaderCallbacks<Cursor> {
                 //查询数据
                 String imageName = data.getString(data.getColumnIndexOrThrow(IMAGE_PROJECTION[0]));
                 String imagePath = data.getString(data.getColumnIndexOrThrow(IMAGE_PROJECTION[1]));
+                
+                File file = new File(imagePath);
+                if (!file.exists() || file.length() <= 0) {
+                    continue;
+                }
+
                 long imageSize = data.getLong(data.getColumnIndexOrThrow(IMAGE_PROJECTION[2]));
                 int imageWidth = data.getInt(data.getColumnIndexOrThrow(IMAGE_PROJECTION[3]));
                 int imageHeight = data.getInt(data.getColumnIndexOrThrow(IMAGE_PROJECTION[4]));
@@ -116,10 +122,10 @@ public class ImageDataSource implements LoaderManager.LoaderCallbacks<Cursor> {
                 }
             }
             //防止没有图片报异常
-            if (data.getCount() > 0) {
+            if (data.getCount() > 0 && allImages.size()>0) {
                 //构造所有图片的集合
                 ImageFolder allImagesFolder = new ImageFolder();
-                allImagesFolder.name = activity.getResources().getString(R.string.all_images);
+                allImagesFolder.name = activity.getResources().getString(R.string.ip_all_images);
                 allImagesFolder.path = "/";
                 allImagesFolder.cover = allImages.get(0);
                 allImagesFolder.images = allImages;

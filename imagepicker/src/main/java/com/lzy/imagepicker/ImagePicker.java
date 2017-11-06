@@ -3,10 +3,13 @@ package com.lzy.imagepicker;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
@@ -33,11 +36,11 @@ import java.util.Locale;
  * 创建日期：2016/5/19
  * 描    述：图片选择的入口类
  * 修订历史：
- *
  * 2017-03-20
+ *
  * @author nanchen
- * 采用单例和弱引用解决Intent传值限制导致的异常
- * ================================================
+ *         采用单例和弱引用解决Intent传值限制导致的异常
+ *         ================================================
  */
 public class ImagePicker {
 
@@ -246,13 +249,14 @@ public class ImagePicker {
         mCurrentImageFolderPosition = 0;
     }
 
-    /** 拍照的方法 */
+    /**
+     * 拍照的方法
+     */
     public void takePicture(Activity activity, int requestCode) {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         takePictureIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         if (takePictureIntent.resolveActivity(activity.getPackageManager()) != null) {
-            if (Utils.existSDCard())
-                takeImageFile = new File(Environment.getExternalStorageDirectory(), "/DCIM/camera/");
+            if (Utils.existSDCard()) takeImageFile = new File(Environment.getExternalStorageDirectory(), "/DCIM/camera/");
             else takeImageFile = Environment.getDataDirectory();
             takeImageFile = createFile(takeImageFile, "IMG_", ".jpg");
             if (takeImageFile != null) {
@@ -262,25 +266,33 @@ public class ImagePicker {
                 // 如果没有指定uri，则data就返回有数据！
 
                 Uri uri;
-
-                if (VERSION.SDK_INT <= VERSION_CODES.M){
+                if (VERSION.SDK_INT <= VERSION_CODES.M) {
                     uri = Uri.fromFile(takeImageFile);
-                }else{
+                } else {
+
                     /**
                      * 7.0 调用系统相机拍照不再允许使用Uri方式，应该替换为FileProvider
                      * 并且这样可以解决MIUI系统上拍照返回size为0的情况
                      */
                     uri = FileProvider.getUriForFile(activity, ProviderUtil.getFileProviderName(activity), takeImageFile);
+                    //加入uri权限 要不三星手机不能拍照
+                    List<ResolveInfo> resInfoList = activity.getPackageManager().queryIntentActivities(takePictureIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                    for (ResolveInfo resolveInfo : resInfoList) {
+                        String packageName = resolveInfo.activityInfo.packageName;
+                        activity.grantUriPermission(packageName, uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    }
                 }
 
-                Log.e("nanchen",ProviderUtil.getFileProviderName(activity));
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,uri);
+                Log.e("nanchen", ProviderUtil.getFileProviderName(activity));
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
             }
         }
         activity.startActivityForResult(takePictureIntent, requestCode);
     }
 
-    /** 根据系统时间、前缀、后缀产生一个文件 */
+    /**
+     * 根据系统时间、前缀、后缀产生一个文件
+     */
     public static File createFile(File folder, String prefix, String suffix) {
         if (!folder.exists() || !folder.isDirectory()) folder.mkdirs();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CHINA);
@@ -288,7 +300,9 @@ public class ImagePicker {
         return new File(folder, filename);
     }
 
-    /** 扫描图片 */
+    /**
+     * 扫描图片
+     */
     public static void galleryAddPic(Context context, File file) {
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
         Uri contentUri = Uri.fromFile(file);
@@ -296,7 +310,9 @@ public class ImagePicker {
         context.sendBroadcast(mediaScanIntent);
     }
 
-    /** 图片选中的监听 */
+    /**
+     * 图片选中的监听
+     */
     public interface OnImageSelectedListener {
         void onImageSelected(int position, ImageItem item, boolean isAdd);
     }
@@ -317,11 +333,56 @@ public class ImagePicker {
         notifyImageSelectedChanged(position, item, isAdd);
     }
 
+    public void setSelectedImages(ArrayList<ImageItem> selectedImages) {
+        if (selectedImages == null) {
+            return;
+        }
+        this.mSelectedImages = selectedImages;
+    }
+
     private void notifyImageSelectedChanged(int position, ImageItem item, boolean isAdd) {
         if (mImageSelectedListeners == null) return;
         for (OnImageSelectedListener l : mImageSelectedListeners) {
             l.onImageSelected(position, item, isAdd);
         }
+    }
+
+    /**
+     * 用于手机内存不足，进程被系统回收，重启时的状态恢复
+     */
+    public void restoreInstanceState(Bundle savedInstanceState) {
+        cropCacheFolder = (File) savedInstanceState.getSerializable("cropCacheFolder");
+        takeImageFile = (File) savedInstanceState.getSerializable("takeImageFile");
+        imageLoader = (ImageLoader) savedInstanceState.getSerializable("imageLoader");
+        style = (CropImageView.Style) savedInstanceState.getSerializable("style");
+        multiMode = savedInstanceState.getBoolean("multiMode");
+        crop = savedInstanceState.getBoolean("crop");
+        showCamera = savedInstanceState.getBoolean("showCamera");
+        isSaveRectangle = savedInstanceState.getBoolean("isSaveRectangle");
+        selectLimit = savedInstanceState.getInt("selectLimit");
+        outPutX = savedInstanceState.getInt("outPutX");
+        outPutY = savedInstanceState.getInt("outPutY");
+        focusWidth = savedInstanceState.getInt("focusWidth");
+        focusHeight = savedInstanceState.getInt("focusHeight");
+    }
+
+    /**
+     * 用于手机内存不足，进程被系统回收时的状态保存
+     */
+    public void saveInstanceState(Bundle outState) {
+        outState.putSerializable("cropCacheFolder", cropCacheFolder);
+        outState.putSerializable("takeImageFile", takeImageFile);
+        outState.putSerializable("imageLoader", imageLoader);
+        outState.putSerializable("style", style);
+        outState.putBoolean("multiMode", multiMode);
+        outState.putBoolean("crop", crop);
+        outState.putBoolean("showCamera", showCamera);
+        outState.putBoolean("isSaveRectangle", isSaveRectangle);
+        outState.putInt("selectLimit", selectLimit);
+        outState.putInt("outPutX", outPutX);
+        outState.putInt("outPutY", outPutY);
+        outState.putInt("focusWidth", focusWidth);
+        outState.putInt("focusHeight", focusHeight);
     }
 
 }
